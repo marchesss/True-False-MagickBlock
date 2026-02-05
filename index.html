@@ -18,9 +18,7 @@ body {
 
 /* START SCREEN */
 
-#startScreen {
-  text-align:center;
-}
+#startScreen { text-align:center; }
 
 .startBtn {
   padding:18px 34px;
@@ -74,10 +72,7 @@ button.answerBtn:hover {
   box-shadow:0 0 16px rgba(168,85,247,0.7);
 }
 
-img {
-  width:160px;
-  margin-top:15px;
-}
+img { width:160px; margin-top:15px; }
 
 #resultBox { display:none; }
 
@@ -90,20 +85,19 @@ input {
   font-size:16px;
 }
 
-#certificate {
+#certificatePreview {
   display:none;
-  background:linear-gradient(135deg,#ede9fe,#ddd6fe);
-  color:#1e1b4b;
-  padding:20px;
-  border-radius:14px;
   margin-top:15px;
+  border-radius:12px;
+  box-shadow:0 0 25px rgba(168,85,247,0.6);
+  max-width:100%;
 }
 </style>
 </head>
 
 <body>
 
-<!-- START SCREEN -->
+<!-- START -->
 <div id="startScreen">
   <h1>MagicBlock Quiz</h1>
   <p>Truth or False Edition</p>
@@ -127,8 +121,11 @@ input {
     <p id="scoreText"></p>
     <input id="nickname" placeholder="Enter your nickname">
     <br><br>
-    <button class="answerBtn btnA" onclick="generateCert()">Generate Certificate</button>
-    <div id="certificate"></div>
+    <button class="answerBtn btnA" onclick="buildCertificate()">Generate Certificate</button>
+    <button class="answerBtn btnB" onclick="downloadCertificate()">Download Certificate</button>
+    <br>
+    <canvas id="certCanvas" width="900" height="500" style="display:none;"></canvas>
+    <img id="certificatePreview">
   </div>
 </div>
 
@@ -138,107 +135,72 @@ input {
 <audio id="bgMusic" src="sounds/bg.mp3" loop></audio>
 
 <script>
+// QUESTIONS
 const questions = [
-{
-q: "MagicBlock enables applications to run fully onchain without servers",
-options: ["True", "False"],
-correct: 0
-},
-{
-q: "MagicBlock is built on Solana infrastructure",
-options: ["True", "False"],
-correct: 0
-},
-{
-q: "Ephemeral Rollups are permanent always-running rollups",
-options: ["True", "False"],
-correct: 1
-},
-{
-q: "$BLOCK is designed as a network token, not a company token",
-options: ["True", "False"],
-correct: 0
-},
-{
-q: "Node operators can be slashed for incorrect computation",
-options: ["True", "False"],
-correct: 0
-},
-{
-q: "There is only one participation option in the presale",
-options: ["True", "False"],
-correct: 1
-}
+{ q:"MagicBlock enables applications to run fully onchain without servers", options:["True","False"], correct:0 },
+{ q:"MagicBlock is built on Solana infrastructure", options:["True","False"], correct:0 },
+{ q:"Ephemeral Rollups are permanent always-running rollups", options:["True","False"], correct:1 },
+{ q:"$BLOCK is a network token, not a company token", options:["True","False"], correct:0 },
+{ q:"Node operators can be slashed for incorrect computation", options:["True","False"], correct:0 },
+{ q:"There is only one participation option in the presale", options:["True","False"], correct:1 }
 ];
 
 let index = 0;
 let score = 0;
 
 /* START */
-
 function startGame() {
   startScreen.style.display = "none";
   gameCard.style.display = "block";
-
-  const bg = document.getElementById("bgMusic");
-  bg.volume = 0.10;   // 10% volume
-  bg.play();
-
+  bgMusic.volume = 0.10;
+  bgMusic.play();
   showQuestion();
 }
 
 /* GAME */
+function playSound(ok){ ok ? soundTrue.play() : soundFalse.play(); }
 
-function playSound(ok) {
-  if (ok) soundTrue.play();
-  else soundFalse.play();
-}
-
-function showQuestion() {
-  feedback.innerHTML = "";
+function showQuestion(){
+  feedback.innerHTML="";
   const q = questions[index];
   question.innerText = q.q;
   a0.innerText = q.options[0];
   a1.innerText = q.options[1];
 }
 
-function choose(i) {
-  const ok = i === questions[index].correct;
+function choose(i){
+  const ok = i===questions[index].correct;
   playSound(ok);
+  if(ok){ score++; feedback.innerHTML=`<img src="images/true.png"><p>Correct ✅</p>`; }
+  else{ feedback.innerHTML=`<img src="images/false.png"><p>Wrong ❌</p>`; }
 
-  if (ok) {
-    score++;
-    feedback.innerHTML = `<img src="images/true.png"><p>Correct ✅</p>`;
-  } else {
-    feedback.innerHTML = `<img src="images/false.png"><p>Wrong ❌</p>`;
-  }
-
-  setTimeout(() => {
+  setTimeout(()=>{
     index++;
-    if (index < questions.length) showQuestion();
+    if(index<questions.length) showQuestion();
     else finishGame();
-  }, 1400);
+  },1400);
 }
 
-function finishGame() {
-  answers.style.display = "none";
-  question.style.display = "none";
-  feedback.innerHTML = "";
-  resultBox.style.display = "block";
-  scoreText.innerText = `You got ${score} out of ${questions.length}`;
+function finishGame(){
+  answers.style.display="none";
+  question.style.display="none";
+  feedback.innerHTML="";
+  resultBox.style.display="block";
+  scoreText.innerText=`You got ${score} out of ${questions.length}`;
 }
 
-function generateCert() {
-  const nick = nickname.value || "MagicBlock Player";
-  certificate.style.display = "block";
-  certificate.innerHTML = `
-    <h2>MagicBlock Certificate</h2>
-    <p><b>${nick}</b></p>
-    <p>Score: ${score} / ${questions.length}</p>
-    <p>Truth or False — MagicBlock Edition</p>
-  `;
+/* CERTIFICATE WITH RANK BADGE */
+function getRank(score,total){
+  if(score===total) return {name:"PERFECT NODE", color:"#facc15"};
+  if(score>=4) return {name:"ROLLUP PRO", color:"#a855f7"};
+  if(score>=2) return {name:"BLOCK EXPLORER", color:"#60a5fa"};
+  return {name:"ONCHAIN ROOKIE", color:"#9ca3af"};
 }
-</script>
 
-</body>
-</html>
+function drawBadge(ctx,x,y,r,text,color){
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.globalAlpha=0.25; ctx.fill(); ctx.globalAlpha=1;
+
+  ctx.beginPath();
+  ctx.arc(x,y,r-10,0,Mat

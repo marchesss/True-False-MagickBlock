@@ -16,8 +16,6 @@ body {
   height:100vh;
 }
 
-/* START SCREEN */
-
 #startScreen { text-align:center; }
 
 .startBtn {
@@ -38,7 +36,6 @@ body {
 }
 
 /* GAME CARD */
-
 .card {
   display:none;
   background: rgba(20,10,38,0.92);
@@ -101,7 +98,7 @@ input {
 <div id="startScreen">
   <h1>MagicBlock Quiz</h1>
   <p>Truth or False Edition</p>
-  <button class="startBtn" onclick="startGame()">START</button>
+  <button class="startBtn" id="startButton">START</button>
 </div>
 
 <!-- GAME -->
@@ -135,6 +132,24 @@ input {
 <audio id="bgMusic" src="sounds/bg.mp3" loop></audio>
 
 <script>
+// GET ELEMENTS
+const startScreen = document.getElementById("startScreen");
+const startButton = document.getElementById("startButton");
+const gameCard = document.getElementById("gameCard");
+const bgMusic = document.getElementById("bgMusic");
+const question = document.getElementById("question");
+const a0 = document.getElementById("a0");
+const a1 = document.getElementById("a1");
+const feedback = document.getElementById("feedback");
+const answers = document.getElementById("answers");
+const resultBox = document.getElementById("resultBox");
+const scoreText = document.getElementById("scoreText");
+const nickname = document.getElementById("nickname");
+const certCanvas = document.getElementById("certCanvas");
+const certificatePreview = document.getElementById("certificatePreview");
+const soundTrue = document.getElementById("soundTrue");
+const soundFalse = document.getElementById("soundFalse");
+
 // QUESTIONS
 const questions = [
 { q:"MagicBlock enables applications to run fully onchain without servers", options:["True","False"], correct:0 },
@@ -148,16 +163,16 @@ const questions = [
 let index = 0;
 let score = 0;
 
-/* START */
-function startGame() {
-  startScreen.style.display = "none";
-  gameCard.style.display = "block";
-  bgMusic.volume = 0.10;
+/* START GAME */
+startButton.addEventListener("click", ()=>{
+  startScreen.style.display="none";
+  gameCard.style.display="block";
+  bgMusic.volume=0.1;
   bgMusic.play();
   showQuestion();
-}
+});
 
-/* GAME */
+/* GAME FUNCTIONS */
 function playSound(ok){ ok ? soundTrue.play() : soundFalse.play(); }
 
 function showQuestion(){
@@ -198,9 +213,58 @@ function getRank(score,total){
 }
 
 function drawBadge(ctx,x,y,r,text,color){
-  ctx.beginPath();
-  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
   ctx.fillStyle=color; ctx.globalAlpha=0.25; ctx.fill(); ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.arc(x,y,r-10,0,Math.PI*2);
+  ctx.fillStyle="#140a26"; ctx.fill();
+  ctx.strokeStyle=color; ctx.lineWidth=4; ctx.stroke();
+  ctx.fillStyle=color; ctx.font="bold 14px Arial"; ctx.textAlign="center";
+  wrapText(ctx,text,x,y+5,90,16);
+}
 
-  ctx.beginPath();
-  ctx.arc(x,y,r-10,0,Mat
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){
+  const words=text.split(' '); let line=''; let lines=[];
+  for(let n=0;n<words.length;n++){
+    const testLine=line+words[n]+' '; const w=ctx.measureText(testLine).width;
+    if(w>maxWidth && n>0){ lines.push(line); line=words[n]+' '; } else line=testLine;
+  }
+  lines.push(line);
+  lines.forEach((l,i)=>{ ctx.fillText(l.trim(),x,y+i*lineHeight); });
+}
+
+function buildCertificate(){
+  const nick = nickname.value || "MagicBlock Player";
+  const c = certCanvas; const ctx = c.getContext("2d");
+  const rank = getRank(score,questions.length);
+
+  const g = ctx.createLinearGradient(0,0,900,500);
+  g.addColorStop(0,"#140a26"); g.addColorStop(1,"#6d28d9");
+  ctx.fillStyle=g; ctx.fillRect(0,0,900,500);
+
+  ctx.strokeStyle="#c4b5fd"; ctx.lineWidth=6; ctx.strokeRect(20,20,860,460);
+
+  ctx.fillStyle="#ede9fe"; ctx.font="bold 44px Arial"; ctx.textAlign="center";
+  ctx.fillText("MAGICBLOCK CERTIFICATE",450,110);
+  ctx.font="22px Arial"; ctx.fillText("Truth or False Quiz Completion",450,155);
+
+  ctx.font="bold 36px Arial"; ctx.fillStyle="#ffffff"; ctx.fillText(nick,450,230);
+  ctx.font="28px Arial"; ctx.fillStyle="#ddd6fe"; ctx.fillText(`Score: ${score} / ${questions.length}`,450,285);
+  ctx.font="bold 26px Arial"; ctx.fillStyle=rank.color; ctx.fillText(`Rank: ${rank.name}`,450,330);
+  drawBadge(ctx,720,250,60,rank.name,rank.color);
+
+  ctx.font="18px Arial"; ctx.fillStyle="#c4b5fd";
+  ctx.fillText("MagicBlock — Fully Onchain Future",450,410);
+
+  certificatePreview.src=c.toDataURL(); certificatePreview.style.display="block";
+}
+
+function downloadCertificate(){
+  buildCertificate();
+  const link=document.createElement("a");
+  link.download="magicblock-certificate.png";
+  link.href=certCanvas.toDataURL();
+  link.click();
+}
+</script>
+</body>
+</html>
